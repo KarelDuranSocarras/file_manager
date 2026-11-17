@@ -14,6 +14,7 @@ class App extends StatelessWidget {
       create: (_) => sl<SyncStatusBloc>()..add(const SyncStatusStarted()),
       child: MaterialApp.router(
         title: 'Respaldo Drive',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true),
         routerConfig: appRouter,
       ),
