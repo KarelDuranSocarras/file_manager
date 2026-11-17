@@ -35,6 +35,13 @@ Categories=Utility;
 EOF
 cp "$APPDIR/respaldo-drive.desktop" "$APPDIR/usr/share/applications/"
 
+cat > "$APPDIR/AppRun" <<'EOF'
+#!/bin/sh
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/bin/file_manager" "$@"
+EOF
+chmod +x "$APPDIR/AppRun"
+
 echo "== appimagetool =="
 mkdir -p tools
 if [ ! -x tools/appimagetool ]; then
