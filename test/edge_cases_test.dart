@@ -5,6 +5,7 @@ import 'package:file_manager/features/sync/data/datasources/drive_api_client.dar
 import 'package:file_manager/features/sync/data/repositories/sync_repository.dart';
 import 'package:file_manager/features/sync/domain/services/sync_exceptions.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import 'sync_repository_test.dart';
 
@@ -103,13 +104,14 @@ void main() {
 
     await repo.scanAndEnqueue();
     await repo.processQueue();
-    final record = await db.getUpload('${tempDir.path}/a.txt');
+    final storedPath = p.join(tempDir.path, 'a.txt');
+    final record = await db.getUpload(storedPath);
     expect(record, isNotNull);
 
     await repo.trashAllCloudCopies();
 
     expect(drive.trashedIds, [record!.driveFileId]);
-    expect(await db.getUpload('${tempDir.path}/a.txt'), isNull);
+    expect(await db.getUpload(storedPath), isNull);
     expect(await db.pendingItems(), isEmpty);
     final trash = await db.trashEntries();
     expect(trash, hasLength(1));

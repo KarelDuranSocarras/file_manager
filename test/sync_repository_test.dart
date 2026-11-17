@@ -5,6 +5,7 @@ import 'package:file_manager/features/sync/data/datasources/drive_api_client.dar
 import 'package:file_manager/features/sync/data/repositories/sync_repository.dart';
 import 'package:file_manager/features/sync/domain/services/sync_exceptions.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 class FakeDriveClient extends DriveApiClient {
   FakeDriveClient({this.failuresBeforeSuccess = 0})
@@ -106,12 +107,11 @@ void main() {
 
     final pending = await db.pendingItems();
     expect(pending.length, 1);
-    expect(pending.first.path, '${tempDir.path}/normal.txt');
+    expect(pending.first.path, p.join(tempDir.path, 'normal.txt'));
   });
 
   test('procesa la cola, sube a Drive y deja la cola vacía', () async {
-    final file = File('${tempDir.path}/normal.txt')
-      ..writeAsStringSync('contenido');
+    File('${tempDir.path}/normal.txt').writeAsStringSync('contenido');
     final drive = FakeDriveClient();
     final repo = SyncRepository(db, drive);
     await repo.setConfiguredFolder(tempDir.path);
@@ -123,7 +123,7 @@ void main() {
     expect(drive.uploadedNames, ['normal.txt']);
     expect(await db.pendingItems(), isEmpty);
 
-    final record = await db.getUpload(file.path);
+    final record = await db.getUpload(p.join(tempDir.path, 'normal.txt'));
     expect(record, isNotNull);
     expect(record!.driveFileId, 'drive-id-1');
   });
@@ -187,6 +187,6 @@ void main() {
     await repo.processQueue();
 
     expect(await db.pendingItems(), isEmpty);
-    expect(await db.getUpload(file.path), isNull);
+    expect(await db.getUpload(p.join(tempDir.path, 'volatil.txt')), isNull);
   });
 }

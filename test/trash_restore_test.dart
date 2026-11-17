@@ -4,6 +4,7 @@ import 'package:file_manager/features/sync/data/datasources/app_database.dart';
 import 'package:file_manager/features/sync/data/datasources/drive_api_client.dart';
 import 'package:file_manager/features/sync/data/repositories/sync_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import 'sync_repository_test.dart';
 
@@ -41,7 +42,8 @@ void main() {
     expect(await repo.localUploadCount(), 0);
     final trash = await repo.trashEntries();
     expect(trash.length, 1);
-    expect(trash.first.path, file.path);
+    final storedPath = p.join(tempDir.path, 'documento.txt');
+    expect(trash.first.path, storedPath);
 
     await repo.undoTrashEntry(trash.first);
 
@@ -92,12 +94,12 @@ void main() {
     expect(result.restored, 1);
     expect(result.skipped, 1);
 
-    final restored = File('${tempDir.path}/sub/a.txt');
+    final restored = File(p.join(tempDir.path, 'sub', 'a.txt'));
     expect(restored.existsSync(), isTrue);
     expect(restored.readAsStringSync(), contains('restaurado-d1'));
     expect(existing.readAsStringSync(), 'local');
 
-    final record = await db.getUpload(restored.path);
+    final record = await db.getUpload(p.join(tempDir.path, 'sub', 'a.txt'));
     expect(record, isNotNull);
     expect(record!.driveFileId, 'd1');
   });
