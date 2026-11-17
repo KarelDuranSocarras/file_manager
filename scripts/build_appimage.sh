@@ -11,9 +11,6 @@ APPDIR="build/appimage/RespaldoDrive.AppDir"
 BUNDLE="build/linux/$ARCH/release/bundle"
 DIST="dist"
 
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
-export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-
 echo "== flutter build linux --release =="
 flutter build linux --release
 
@@ -41,13 +38,20 @@ cp "$APPDIR/respaldo-drive.desktop" "$APPDIR/usr/share/applications/"
 echo "== appimagetool =="
 mkdir -p tools
 if [ ! -x tools/appimagetool ]; then
-  curl -L -o tools/appimagetool \
+  curl -L --fail -o tools/appimagetool \
     "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
   chmod +x tools/appimagetool
 fi
 
+RUNTIME="tools/runtime-x86_64"
+if [ ! -f "$RUNTIME" ]; then
+  curl -L --fail -o "$RUNTIME" \
+    "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64"
+fi
+
 mkdir -p "$DIST"
-tools/appimagetool --appimage-extract-and-run "$APPDIR" \
-  "$DIST/RespaldoDrive-x86_64.AppImage"
+tools/appimagetool --appimage-extract-and-run \
+  --runtime-file "$RUNTIME" \
+  "$APPDIR" "$DIST/RespaldoDrive-x86_64.AppImage"
 
 echo "== listo: $DIST/RespaldoDrive-x86_64.AppImage =="
