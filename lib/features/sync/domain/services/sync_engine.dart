@@ -260,11 +260,19 @@ class SyncEngine {
   }
 
   Future<void> _offerRestoreIfNeeded() async {
-    final localCount = await _repository.localUploadCount();
-    if (localCount > 0) return;
-    final cloudCount = await _repository.cloudBackupFileCount();
-    if (cloudCount > 0) {
-      _emit(EngineRestoreOffer(cloudCount));
+    try {
+      final localCount = await _repository.localUploadCount();
+      if (localCount > 0) return;
+      final cloudCount = await _repository.cloudBackupFileCount();
+      if (cloudCount > 0) {
+        _emit(EngineRestoreOffer(cloudCount));
+      }
+    } on DriveAuthException catch (e) {
+      _emit(EngineError(e.message));
+    } on DriveNetworkException {
+      // Sin red: la oferta se reintenta en el próximo ciclo.
+    } on DriveApiException {
+      // No se pudo listar la nube: se omite la oferta.
     }
   }
 

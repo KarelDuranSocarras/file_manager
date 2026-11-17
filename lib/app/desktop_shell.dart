@@ -84,10 +84,16 @@ class DesktopShell with WindowListener, TrayListener {
   }
 
   Future<void> _setupTray() async {
-    await trayManager.setIcon('assets/tray_icon_16.png');
-    await trayManager.setToolTip('Respaldo Drive');
-    await trayManager.setContextMenu(await _buildMenu());
-    _trayReady = true;
+    try {
+      await trayManager.setIcon('assets/tray_icon_16.png');
+      await trayManager.setToolTip('Respaldo Drive');
+      await trayManager.setContextMenu(await _buildMenu());
+      _trayReady = true;
+    } on Exception {
+      // Escritorios sin bandeja (GNOME sin AppIndicator): la app sigue
+      // funcionando desde la ventana; en Windows la bandeja es nativa.
+      _trayReady = false;
+    }
   }
 
   Future<Menu> _buildMenu() async {
