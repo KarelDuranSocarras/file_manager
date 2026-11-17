@@ -1,0 +1,130 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows (instalador .exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.0
+          cache: true
+
+      # El .env se reconstruye desde secretos del repositorio y nunca
+      # se publica (acuerdo §9.32).
+      - name: Crear .env desde secretos
+        shell: bash
+        env:
+          DRIVE_CLIENT_ID: ${{ secrets.DRIVE_CLIENT_ID }}
+          DRIVE_CLIENT_SECRET: ${{ secrets.DRIVE_CLIENT_SECRET }}
+          DRIVE_REFRESH_TOKEN: ${{ secrets.DRIVE_REFRESH_TOKEN }}
+        run: |
+          cat > .env <<EOF
+          DRIVE_CLIENT_ID=$DRIVE_CLIENT_ID
+          DRIVE_CLIENT_SECRET=$DRIVE_CLIENT_SECRET
+          DRIVE_REFRESH_TOKEN=$DRIVE_REFRESH_TOKEN
+          EOF
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Generar env.g.dart (envied)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: flutter test
+        run: flutter test
+
+      - name: flutter build windows --release
+        run: flutter build windows --release
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Compilar instalador
+        shell: cmd
+        run: '"%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" windows\installer.iss'
+
+      - name: Subir instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador-respaldo-drive-windows
+          path: dist/instalador_respaldodrive_windows.exe
+
+  linux:
+    name: Linux (AppImage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev libnotify-dev ninja-build cmake unzip
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.0
+          cache: true
+
+      - name: Crear .env desde secretos
+        env:
+          DRIVE_CLIENT_ID: ${{ secrets.DRIVE_CLIENT_ID }}
+          DRIVE_CLIENT_SECRET: ${{ secrets.DRIVE_CLIENT_SECRET }}
+          DRIVE_REFRESH_TOKEN: ${{ secrets.DRIVE_REFRESH_TOKEN }}
+        run: |
+          cat > .env <<EOF
+          DRIVE_CLIENT_ID=$DRIVE_CLIENT_ID
+          DRIVE_CLIENT_SECRET=$DRIVE_CLIENT_SECRET
+          DRIVE_REFRESH_TOKEN=$DRIVE_REFRESH_TOKEN
+          EOF
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Generar env.g.dart (envied)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: flutter test
+        run: flutter test
+
+      - name: flutter build linux --release
+        run: flutter build linux --release
+
+      - name: Empaquetar AppImage
+        run: ./scripts/build_appimage.sh x64
+
+      - name: Subir AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-drive-appimage
+          path: dist/RespaldoDrive-x86_64.AppImage
+
+  release:
+    name: Release (solo tags v*)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          fail_on_unmatched_files: true
