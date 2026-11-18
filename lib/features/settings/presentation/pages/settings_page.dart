@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/di.dart';
+import '../../../../app/theme.dart';
 import '../../../sync/data/repositories/sync_repository.dart';
 import '../../../sync/domain/services/sync_engine.dart';
 
@@ -62,71 +63,136 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Ajustes')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Frecuencia de sincronización',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
-            initialValue: _intervalMinutes,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Sincronizar cada',
-            ),
-            items: const [
-              DropdownMenuItem(value: 5, child: Text('5 minutos')),
-              DropdownMenuItem(value: 10, child: Text('10 minutos')),
-              DropdownMenuItem(value: 15, child: Text('15 minutos')),
-              DropdownMenuItem(value: 30, child: Text('30 minutos')),
-              DropdownMenuItem(value: 60, child: Text('1 hora')),
-            ],
-            onChanged: _saveInterval,
-          ),
-          const SizedBox(height: 24),
-          Text('Archivos excluidos',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          const Text(
-            'Además de los temporales y ocultos del sistema. Escribe una '
-            'extensión (p. ej. .log) o parte del nombre a excluir.',
-          ),
-          const SizedBox(height: 8),
-          Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _exclusionController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Nueva exclusión',
-                    hintText: '.log',
-                  ),
-                  onSubmitted: (_) => _addExclusion(),
+              _SettingsCard(
+                icon: Icons.schedule,
+                title: 'Frecuencia de sincronización',
+                description:
+                    'Con qué frecuencia se revisa la carpeta en busca de '
+                    'cambios. Los archivos nuevos también se detectan al '
+                    'momento mientras la app esté abierta.',
+                child: DropdownButtonFormField<int>(
+                  initialValue: _intervalMinutes,
+                  items: const [
+                    DropdownMenuItem(value: 5, child: Text('5 minutos')),
+                    DropdownMenuItem(value: 10, child: Text('10 minutos')),
+                    DropdownMenuItem(value: 15, child: Text('15 minutos')),
+                    DropdownMenuItem(value: 30, child: Text('30 minutos')),
+                    DropdownMenuItem(value: 60, child: Text('1 hora')),
+                  ],
+                  onChanged: _saveInterval,
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton.tonalIcon(
-                onPressed: _addExclusion,
-                icon: const Icon(Icons.add),
-                label: const Text('Agregar'),
+              const SizedBox(height: 16),
+              _SettingsCard(
+                icon: Icons.block,
+                title: 'Archivos excluidos',
+                description:
+                    'Además de los temporales y ocultos del sistema, puedes '
+                    'excluir por extensión (p. ej. .log) o por parte del '
+                    'nombre. Se aplican también a los archivos nuevos.',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _exclusionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nueva exclusión',
+                              hintText: '.log',
+                            ),
+                            onSubmitted: (_) => _addExclusion(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: _addExclusion,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Agregar'),
+                        ),
+                      ],
+                    ),
+                    if (_exclusions.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _exclusions
+                            .map(
+                              (value) => InputChip(
+                                label: Text(value),
+                                onDeleted: () => _removeExclusion(value),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _exclusions
-                .map(
-                  (value) => InputChip(
-                    label: Text(value),
-                    onDeleted: () => _removeExclusion(value),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppTheme.salmon.withValues(alpha: 0.25),
+                  child: Icon(icon, size: 20, color: AppTheme.coralDark),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: TextStyle(
+                color: AppTheme.ink.withValues(alpha: 0.65),
+              ),
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
       ),
     );
   }

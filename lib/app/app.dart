@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/sync/presentation/bloc/sync_status_bloc.dart';
 import 'di.dart';
 import 'router.dart';
+import 'theme.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -15,7 +16,7 @@ class App extends StatelessWidget {
       child: MaterialApp.router(
         title: 'Respaldo Drive',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(useMaterial3: true),
+        theme: AppTheme.light,
         routerConfig: appRouter,
       ),
     );
