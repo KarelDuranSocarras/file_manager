@@ -85,9 +85,12 @@ class DesktopShell with WindowListener, TrayListener {
 
   Future<void> _setupTray() async {
     try {
+      // El menú va ANTES del ícono: en Linux el indicador se crea con el
+      // menú que ya esté construido; si se reemplaza después, el menú
+      // exportado por D-Bus queda vacío y ningún clic muestra nada.
+      await trayManager.setContextMenu(await _buildMenu());
       await trayManager.setIcon('assets/tray_icon_16.png');
       await trayManager.setToolTip('Respaldo Drive');
-      await trayManager.setContextMenu(await _buildMenu());
       _trayReady = true;
     } on Exception {
       // Escritorios sin bandeja (GNOME sin AppIndicator): la app sigue
