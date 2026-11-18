@@ -87,6 +87,18 @@ class SyncRepository {
   Future<void> setScanIntervalMinutes(int minutes) =>
       _db.setConfig('scan_interval_minutes', '$minutes');
 
+  Future<bool> autoSyncEnabled() async =>
+      (await _db.getConfig('auto_sync_enabled') ?? '1') != '0';
+
+  Future<void> setAutoSyncEnabled(bool enabled) =>
+      _db.setConfig('auto_sync_enabled', enabled ? '1' : '0');
+
+  Future<bool> notificationsEnabled() async =>
+      (await _db.getConfig('notifications_enabled') ?? '1') != '0';
+
+  Future<void> setNotificationsEnabled(bool enabled) =>
+      _db.setConfig('notifications_enabled', enabled ? '1' : '0');
+
   /// Exclusiones personalizadas del usuario: '.log' extensión, resto
   /// se interpreta como parte de nombre (§2.5).
   Future<List<String>> customExclusions() async {

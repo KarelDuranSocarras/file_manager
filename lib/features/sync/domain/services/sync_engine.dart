@@ -103,6 +103,7 @@ class SyncEngine {
   DateTime? _startedAt;
   bool _offlineWarned = false;
   bool _paused = false;
+  bool _autoSync = true;
 
   bool get isPaused => _paused;
 
@@ -130,17 +131,30 @@ class SyncEngine {
     scanInterval = Duration(
       minutes: await _repository.scanIntervalMinutes(),
     );
+    _autoSync = await _repository.autoSyncEnabled();
     _watch(folder);
     await syncNow();
-    _scanTimer = Timer.periodic(scanInterval, (_) => syncNow());
+    _restartTimer();
   }
 
   /// Cambia el intervalo de escaneo desde ajustes y lo persiste (§2.5).
   Future<void> setScanInterval(Duration interval) async {
     scanInterval = interval;
     await _repository.setScanIntervalMinutes(interval.inMinutes);
+    _restartTimer();
+  }
+
+  /// Activa/desactiva la sincronización automática por intervalo
+  /// (ajustes). El watcher y "Sincronizar ahora" siguen funcionando.
+  Future<void> setAutoSync(bool enabled) async {
+    _autoSync = enabled;
+    await _repository.setAutoSyncEnabled(enabled);
+    _restartTimer();
+  }
+
+  void _restartTimer() {
     _scanTimer?.cancel();
-    if (!_paused && !_disposed) {
+    if (_autoSync && !_paused && !_disposed) {
       _scanTimer = Timer.periodic(scanInterval, (_) => syncNow());
     }
   }

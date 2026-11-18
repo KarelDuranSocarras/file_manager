@@ -104,12 +104,12 @@ class DesktopShell with WindowListener, TrayListener {
       items: [
         MenuItem(
           key: 'open',
-          label: 'Abrir Respaldo Drive',
+          label: 'Mostrar Respaldo Drive',
           onClick: (_) => _showWindow(),
         ),
         MenuItem(
           key: 'pause',
-          label: paused ? 'Reanudar sincronización' : 'Pausar sincronización',
+          label: paused ? 'Reanudar sincronización' : 'Detener sincronización',
           onClick: (_) {
             final engine = sl<SyncEngine>();
             paused ? engine.resume() : engine.pause();
@@ -124,7 +124,7 @@ class DesktopShell with WindowListener, TrayListener {
         MenuItem.separator(),
         MenuItem(
           key: 'exit',
-          label: 'Salir',
+          label: 'Cerrar',
           onClick: (_) => exit(0),
         ),
       ],
@@ -147,7 +147,8 @@ class DesktopShell with WindowListener, TrayListener {
 
   @override
   void onWindowClose() async {
-    // El botón X minimiza a la bandeja; salir solo desde el menú (§5.15).
+    // La X minimiza a la bandeja y el respaldo sigue en segundo plano;
+    // salir de verdad es una acción explícita del menú de la bandeja.
     await windowManager.hide();
     if (_trayReady) {
       await _setupTray();

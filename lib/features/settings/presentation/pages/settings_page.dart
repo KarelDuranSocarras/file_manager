@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/di.dart';
+import '../../../../app/notifications.dart';
 import '../../../../app/theme.dart';
 import '../../../sync/data/repositories/sync_repository.dart';
 import '../../../sync/domain/services/sync_engine.dart';
@@ -19,6 +20,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _exclusionController = TextEditingController();
   List<String> _exclusions = const [];
   int _intervalMinutes = 15;
+  bool _autoSync = true;
+  bool _notifications = true;
 
   @override
   void initState() {
@@ -29,6 +32,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _load() async {
     _intervalMinutes = await _repo.scanIntervalMinutes();
     _exclusions = await _repo.customExclusions();
+    _autoSync = await _repo.autoSyncEnabled();
+    _notifications = await _repo.notificationsEnabled();
     if (mounted) setState(() {});
   }
 
@@ -86,6 +91,49 @@ class _SettingsPageState extends State<SettingsPage> {
                     DropdownMenuItem(value: 60, child: Text('1 hora')),
                   ],
                   onChanged: _saveInterval,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _SettingsCard(
+                icon: Icons.tune,
+                title: 'Preferencias',
+                description:
+                    'Controla cómo se comporta Respaldo Drive en tu '
+                    'equipo.',
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Sincronización automática'),
+                      subtitle: const Text(
+                        'Revisa la carpeta y sube cambios cada cierto '
+                        'tiempo. Si la desactivas, solo sincroniza con '
+                        '"Sincronizar ahora" o al detectar cambios '
+                        'mientras la app está abierta.',
+                      ),
+                      value: _autoSync,
+                      activeThumbColor: AppTheme.coral,
+                      onChanged: (value) async {
+                        await _engine.setAutoSync(value);
+                        if (mounted) setState(() => _autoSync = value);
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Notificaciones'),
+                      subtitle: const Text(
+                        'Avisos del sistema solo para problemas y avisos '
+                        'importantes (sin conexión, cuota llena, errores).',
+                      ),
+                      value: _notifications,
+                      activeThumbColor: AppTheme.coral,
+                      onChanged: (value) async {
+                        await _repo.setNotificationsEnabled(value);
+                        sl<NotificationService>().setEnabled(value);
+                        if (mounted) setState(() => _notifications = value);
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

@@ -3,14 +3,22 @@ import 'package:local_notifier/local_notifier.dart';
 import '../features/sync/domain/services/sync_engine.dart';
 
 /// Notificaciones nativas minimalistas: solo errores y eventos críticos
-/// (§4.12). Nada de avisar subidas normales.
+/// (§4.12). Nada de avisar subidas normales. Se pueden desactivar desde
+/// ajustes.
 class NotificationService {
+  bool enabled = true;
+
   Future<void> initialize() async {
     await localNotifier.setup(appName: 'Respaldo Drive');
   }
 
+  void setEnabled(bool value) {
+    enabled = value;
+  }
+
   void listen(SyncEngine engine) {
     engine.events.listen((event) {
+      if (!enabled) return;
       switch (event) {
         case EngineOfflineWarning():
           _notify(
